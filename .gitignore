@@ -1,0 +1,5 @@
+testcases/
+下发/
+*.out
+*.data
+*.dump
