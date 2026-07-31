@@ -80,7 +80,7 @@ class Committer{
             }
             return ans;
         }
-        int Commit()
+        pair<int,int> Commit()
         {
             if (!time){
                 if (l!=r&&robs[l].ready){
@@ -92,7 +92,7 @@ class Committer{
             if (time){
                 time--;
                 if (time==0){
-                 //   std::cout<<"commit: "<<cur_rb.id<<endl;
+                   // std::cout<<"commit: "<<cur_rb.id<<endl;
                     if (cur_rb.type>0){//store memory
                         unsigned int value=cur_rb.value;
                         for (int i=0;i<cur_rb.type;i++)
@@ -101,32 +101,31 @@ class Committer{
                             value>>=8;
                         }
                      //   cout<<"memory["<<cur_rb.dest<<"] changed to "<<cur_rb.value<<"(length "<<cur_rb.type<<")"<<endl;
-                      //  debug_compare();
-                        return cur_rb.id;
+                       // debug_compare();
+                        return make_pair(cur_rb.id,0);
                     }
                     else if (cur_rb.type==0){//alu
                         if (cur_rb.dest==(unsigned int)-1){
-                            std::cout<<(reg[a0].val&255)<<std::endl;halt=true;return 0;
+                            std::cout<<(reg[a0].val&255)<<std::endl;halt=true;
+                            return make_pair(0,0);
                         }
                         reg[cur_rb.dest].val=cur_rb.value;
-                       // cout<<"reg["<<cur_rb.dest<<"] changed to "<<cur_rb.value<<endl;
+                     //    cout<<"reg["<<cur_rb.dest<<"] changed to "<<cur_rb.value<<endl;
                         if (reg[cur_rb.dest].prod==cur_rb.id){
                             reg[cur_rb.dest].prod=-1;
                         }
                     }
                     else{//branch
                         if (cur_rb.value){//needs to revert
-                          //  cout<<"REVERTED TO "<<cur_rb.dest<<endl;
-                            pc.val=cur_rb.dest; 
-                            l=r=0;//clear all ROBs
-                         //   debug_compare();
-                            return -cur_rb.id;//need to clear all RS > id
+                       //     cout<<"REVERT TO "<<cur_rb.dest<<endl;
+                          //  debug_compare();
+                            return make_pair(-cur_rb.id,cur_rb.dest);//need to clear all RS > id
                         }
                     }
                   //debug_compare();
                 }
             }
-            return 0;
+            return make_pair(0,0);
         }
         void receive(CDB cdb){
             for (int id=l;id!=r;id=(id+1)%maxk){
@@ -139,5 +138,8 @@ class Committer{
                     robs[id].ready=true;
                 }
             }
+        }
+        void clear(){
+            l=r=time=0;
         }
 };

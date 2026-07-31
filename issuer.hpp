@@ -20,7 +20,7 @@ class Issuer{
     int issue(int clk)
     {
         if (id==-1){return 4;}
-    // cout<<"Issue: "<<id<<" "<<clk<<endl;
+        cout<<"Issue: "<<id<<" "<<clk<<endl;
         OP_TYPE type=cur_op.type;int rd=cur_op.rd,r1=cur_op.r1,r2=cur_op.r2;
         RS rs;rs.type=type;rs.id=clk;//label
         unsigned int val=0;
@@ -214,8 +214,8 @@ class Issuer{
                     reg[rd].prod=clk;
                     alu.add(rs);
                     committer.add(ROB(clk,rd));
-                    nex_want+=id+4+signed21(r2);
-                    return id+4+signed21(r2);
+                    nex_want+=4+signed12(r2);
+                    return 4+signed12(r2);
                 }
                 if (reg[r1].prod==-1){
                     val=reg[r1].val;

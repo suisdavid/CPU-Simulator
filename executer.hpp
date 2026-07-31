@@ -38,10 +38,16 @@ class Executer{
         }
         bool run(){
             if (!time){
-                if (l!=r&&rss[l].q1==-1&&rss[l].q2==-1){
-                    cur_rs=rss[l];
-                    time=(is_load(cur_rs.type)?3:1);
-                    l=(l+1)%maxm;
+                for (int id=l;id!=r;id=(id+1)%maxm){//find the first ready instruction
+                    if (rss[id].q1==-1&&rss[id].q2==-1){
+                        cur_rs=rss[id];
+                        time=(is_load(cur_rs.type)?3:1);
+                        for (int i=id;i!=l;i=(i+maxm-1)%maxm){
+                            rss[i]=rss[(i+maxm-1)%maxm];
+                        }
+                        l=(l+1)%maxm;
+                        break;
+                    }
                 }
             }
             if (time){
@@ -101,16 +107,16 @@ class ALU: public Executer{
                         val=(r1^r2);
                         break;
                     case OP_SLL:
-                        val=(r1<<r2);
+                        val=(r1<<(r2&31));
                         break;
                     case OP_SRL:
-                        val=(r1>>r2);
+                        val=(r1>>(r2&31));
                         break;
                     case OP_SRA:
                         val=((signed int)r1>>r2);
                         break;
                     case OP_SLT:
-                        val=((signed int)r1<r2?1:0);
+                        val=((signed int)r1<(signed int)r2?1:0);
                         break;
                     case OP_SLTU:
                         val=(r1<r2?1:0);
@@ -134,10 +140,10 @@ class ALU: public Executer{
                         val=(r1>>r2);
                         break;
                     case OP_SRAI:
-                        val=(r1>>r2);
+                        val=((signed int)r1>>r2);
                         break;
                     case OP_SLTI:
-                        val=(r1<signed12(r2)?1:0);
+                        val=((signed int)r1<signed12(r2)?1:0);
                         break;
                     case OP_SLTIU:
                         val=(r1<(unsigned int)signed12(r2)?1:0);

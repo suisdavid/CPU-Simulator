@@ -21,6 +21,7 @@ LSU lsu;
 BRU bru;
 Committer committer;
 bool halt;
+int flush_val,newaddr;//for flushing
 int hex2int(unsigned char c){
     if (c>='0'&&c<='9'){
         return c-'0';
@@ -64,9 +65,31 @@ unsigned int fetch(int id){
 
 int main(){
     read_op();
+     for (int i=0;i<maxn;i++){
+        naive::_memory[i]=memory[i];
+    }
     int clk=0;
     while (!halt){
         clk++;reg[x0].val=0;reg[x0].prod=-1;//period initialize
+        if (flush_val){//flushing
+            issuer.nex_want=pc.val=newaddr;
+            alu.clear(flush_val);//clear all RS whose id>-res
+            if (lsu.lst_store>flush_val){
+                lsu.lst_store=-1;
+            }
+            lsu.clear(flush_val);
+            bru.clear(flush_val);
+            for (int i=0;i<32;i++){
+                if (reg[i].prod>flush_val){
+                    reg[i].prod=-1;
+                }
+            }
+            committer.clear();
+            decoder.id=-1;
+            issuer.id=-1;
+            flush_val=0;
+            continue;
+        }
 
         //fetch
         pair<int,unsigned int>fetcher_output=std::make_pair(pc.val,fetch(pc.val));
@@ -79,33 +102,21 @@ int main(){
         broadcast(lsu.execute());
         broadcast(bru.execute());
         //commit
-        int res=committer.Commit();
+        pair<int,int>committer_output=committer.Commit();
+        int res=committer_output.first;
         if (res>0&&lsu.lst_store==res){
             lsu.lst_store=-1;//store completed
         }
-        if (res<0){//revert
-            issuer.nex_want=pc.val;
-            alu.clear(-res);//clear all RS whose id>-res
-            if (lsu.lst_store>-res){
-                lsu.lst_store=-1;
-            }
-            lsu.clear(-res);
-            bru.clear(-res);
-            for (int i=0;i<32;i++){
-                if (reg[i].prod>-res){
-                    reg[i].prod=-1;
-                }
-            }
+        else if (res<0){//revert
+            flush_val=-res;
+            newaddr=committer_output.second;
         }
         //update
         decoder.id=fetcher_output.first;decoder.opcode=fetcher_output.second;
         if (decode_output.first==issuer.nex_want)
         {  
             issuer.id=decode_output.first;issuer.cur_op=decode_output.second;
-            if (res>=0)
-            {
-                pc.val+=offset;
-            }
+            pc.val+=offset;
         }
         else{
             issuer.id=-1;//rejected legacy decoder output
