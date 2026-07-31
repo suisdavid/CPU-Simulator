@@ -11,10 +11,10 @@ extern bool halt;
 const int maxk=1024;
 class Committer{
     private:
-        ROB robs[maxk],cur_rb;
+        ROB robs[maxk],cur_rb,buffer;
         int l,r,time;
         int debug_cnt;
-
+        bool has_buffer;
         void debug_compare(){//for debugging
             debug_cnt++;
             if (naive::do_naive()){
@@ -58,13 +58,21 @@ class Committer{
         Committer(){
             l=0;r=0;time=0;
             debug_cnt=0;
+            has_buffer=0;
         }
         bool full(){
             return (r+1)%maxk==l;
         }
         void add(ROB rob){
-            robs[r]=rob;
-            r=(r+1)%maxk;
+            buffer=rob;has_buffer=1;
+        }
+        void update(){
+            if (has_buffer)
+            {
+                robs[r]=buffer;
+                r=(r+1)%maxk;
+                has_buffer=0;
+            }
         }
         pair<unsigned int,bool>read(int prod)
         {
@@ -128,6 +136,14 @@ class Committer{
             return make_pair(0,0);
         }
         void receive(CDB cdb){
+            if (has_buffer&&buffer.id==cdb.id){
+                if (cdb.dest!=-2)// -2 is for branch operations, -1 is for halt
+                {
+                    buffer.dest=cdb.dest;
+                }
+                buffer.value=cdb.val;
+                buffer.ready=true;
+            }
             for (int id=l;id!=r;id=(id+1)%maxk){
                 if (robs[id].id==cdb.id){
                     if (cdb.dest!=-2)// -2 is for branch operations, -1 is for halt

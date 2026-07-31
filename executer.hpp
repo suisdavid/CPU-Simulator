@@ -3,6 +3,7 @@
 #include "op.hpp"
 #include "RS.hpp"
 #include "CDB.hpp"
+#include "committer.hpp"
 extern unsigned char memory[];
 extern Register reg[],pc;
 const int maxm=1024;
@@ -31,10 +32,11 @@ bool is_store(OP_TYPE type){
 
 class Executer{
     protected:
-        RS rss[maxm],cur_rs;
+        RS rss[maxm],cur_rs,buffer;
         int l,r,time;
+        bool has_buffer;
         Executer(){
-            l=0;r=0;time=0;
+            l=0;r=0;time=0;has_buffer=0;
         }
         bool run(){
             if (!time){
@@ -64,10 +66,17 @@ class Executer{
             return (r+1)%maxm==l;
         }
         void add(RS rs){
-            rss[r]=rs;
-            r=(r+1)%maxm;
+            buffer=rs;has_buffer=1;
         }
         void receive(CDB cdb){
+            if (has_buffer){
+                if (buffer.q1==cdb.id){
+                    buffer.q1=-1;buffer.v1=cdb.val;
+                }
+                if (buffer.q2==cdb.id){
+                    buffer.q2=-1;buffer.v2=cdb.val;
+                }
+            }
             for (int i=l;i!=r;i=(i+1)%maxm){
                 if (rss[i].q1==cdb.id){
                     rss[i].q1=-1;rss[i].v1=cdb.val;
@@ -83,6 +92,14 @@ class Executer{
             }
             if (r==l){
                 time=0;//completely cleared
+            }
+        }
+        void update(){
+            if (has_buffer)
+            {
+                rss[r]=buffer;
+                r=(r+1)%maxm;
+                has_buffer=0;
             }
         }
 };

@@ -122,6 +122,7 @@ int main(){
             issuer.id=-1;//rejected legacy decoder output
             pc.val=issuer.nex_want;
         }
+        alu.update();lsu.update();bru.update();committer.update();
     }
     return 0;
 }
