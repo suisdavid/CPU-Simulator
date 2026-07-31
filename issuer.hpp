@@ -20,7 +20,7 @@ class Issuer{
     int issue(int clk)
     {
         if (id==-1){return 4;}
-        cout<<"Issue: "<<id<<" "<<clk<<endl;
+      //  cout<<"Issue: "<<id<<" "<<clk<<endl;
         OP_TYPE type=cur_op.type;int rd=cur_op.rd,r1=cur_op.r1,r2=cur_op.r2;
         RS rs;rs.type=type;rs.id=clk;//label
         unsigned int val=0;

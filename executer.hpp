@@ -48,6 +48,9 @@ class Executer{
                         l=(l+1)%maxm;
                         break;
                     }
+                    if (is_store(rss[id].type)){//store op not completed
+                        return 0;
+                    }
                 }
             }
             if (time){
@@ -113,7 +116,7 @@ class ALU: public Executer{
                         val=(r1>>(r2&31));
                         break;
                     case OP_SRA:
-                        val=((signed int)r1>>r2);
+                        val=((signed int)r1>>(r2&31));
                         break;
                     case OP_SLT:
                         val=((signed int)r1<(signed int)r2?1:0);
