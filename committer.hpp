@@ -92,7 +92,7 @@ class Committer{
             if (time){
                 time--;
                 if (time==0){
-                   // std::cout<<"commit: "<<cur_rb.id<<endl;
+                 //   std::cout<<"commit: "<<cur_rb.id<<endl;
                     if (cur_rb.type>0){//store memory
                         unsigned int value=cur_rb.value;
                         for (int i=0;i<cur_rb.type;i++)
@@ -100,7 +100,7 @@ class Committer{
                             memory[cur_rb.dest+i]=(value&255);
                             value>>=8;
                         }
-                      //  cout<<"memory["<<cur_rb.dest<<"] changed to "<<cur_rb.value<<"(length "<<cur_rb.type<<")"<<endl;
+                     //   cout<<"memory["<<cur_rb.dest<<"] changed to "<<cur_rb.value<<"(length "<<cur_rb.type<<")"<<endl;
                       //  debug_compare();
                         return cur_rb.id;
                     }
@@ -109,7 +109,7 @@ class Committer{
                             std::cout<<(reg[a0].val&255)<<std::endl;halt=true;return 0;
                         }
                         reg[cur_rb.dest].val=cur_rb.value;
-                   //     cout<<"reg["<<cur_rb.dest<<"] changed to "<<cur_rb.value<<endl;
+                       // cout<<"reg["<<cur_rb.dest<<"] changed to "<<cur_rb.value<<endl;
                         if (reg[cur_rb.dest].prod==cur_rb.id){
                             reg[cur_rb.dest].prod=-1;
                         }

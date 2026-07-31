@@ -1,20 +1,17 @@
 #pragma once
 #include "reg.hpp"
 #include "op.hpp"
-extern Register pc;
-
+extern unsigned char memory[];
 class Decoder{
     public:
     int id;
-    op cur_op;
+    unsigned int opcode;
     Decoder(){
         id=-1;
     }
-    Decoder decode(int id,unsigned int x){
-        if (id==-1){return Decoder();}
-        Decoder new_decoder;
-        new_decoder.id=id;
-        new_decoder.cur_op=decode(x);
-        return new_decoder;
+    pair<int,op> decode(){
+        pair<int,op>res;res.first=id;
+        if (id!=-1){res.second=op_decode(opcode);}
+        return res;
     }
 };

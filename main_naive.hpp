@@ -33,7 +33,7 @@ int do_naive(){
     if (x==0x0ff00513){
         return _reg[a0].val&255;
     }
-    op cur_op=decode(x);
+    op cur_op=op_decode(x);
     OP_TYPE type=cur_op.type;int rd=cur_op.rd,r1=cur_op.r1,r2=cur_op.r2;
     // cout<<_pc.val<<" "<<type<<" "<<rd<<" "<<r1<<" "<<r2<<" "<<_reg[a0].val<<endl;
     switch (type){

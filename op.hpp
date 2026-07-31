@@ -50,7 +50,7 @@ struct op{
     }
 };
 
-op decode(unsigned int x){
+op op_decode(unsigned int x){
     int opcode=(x&127);
     if (opcode==0b0110011){//R:basic arithmetics
         int funct3=((x>>12)&7),funct7=(x>>25),rd=((x>>7)&31),r1=((x>>15)&31),r2=((x>>20)&31);
