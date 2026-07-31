@@ -36,6 +36,9 @@ enum Reg_Name{
 class Register{
     public:
     unsigned int val;
-    unsigned int prod;
+    int prod;
+    Register(){
+        val=0;prod=-1;
+    }
 };
 

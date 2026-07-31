@@ -3,3 +3,4 @@ testcases/
 *.out
 *.data
 *.dump
+*.c

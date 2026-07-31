@@ -38,17 +38,19 @@ enum OP_TYPE{
     OP_JAL,
     OP_JALR,
     OP_AUIPC,
-    OP_LUI
+    OP_LUI,
+    OP_NONE
 };
 struct op{
     OP_TYPE type;
     unsigned int rd,r1,r2;
-    op(OP_TYPE type_,int rd_,int r1_,int r2_){
+    unsigned int id;
+    op(OP_TYPE type_=OP_NONE,int rd_=0,int r1_=0,int r2_=0){
         type=type_;rd=rd_;r1=r1_;r2=r2_;
     }
 };
 
-op parse_op(unsigned int x){
+op decode(unsigned int x){
     int opcode=(x&127);
     if (opcode==0b0110011){//R:basic arithmetics
         int funct3=((x>>12)&7),funct7=(x>>25),rd=((x>>7)&31),r1=((x>>15)&31),r2=((x>>20)&31);
@@ -141,13 +143,13 @@ op parse_op(unsigned int x){
     else if (opcode==0b0100011){//S:memory
         int funct3=((x>>12)&7),funct7=(x>>25),r1=((x>>15)&31),r2=((x>>20)&31),imm=(((x>>25)<<5)|((x>>7)&31));
         if (funct3==0b000){//sb
-            return op(OP_SB,r2,r1,imm);
+            return op(OP_SB,imm,r1,r2);
         }
         else if (funct3==0b001){//sh
-            return op(OP_SH,r2,r1,imm);
+            return op(OP_SH,imm,r1,r2);
         }
         else if (funct3==0b010){//sw
-            return op(OP_SW,r2,r1,imm);
+            return op(OP_SW,imm,r1,r2);
         }
     }
     else if (opcode==0b1100011){//B:control
@@ -187,4 +189,5 @@ op parse_op(unsigned int x){
         int rd=((x>>7)&31),imm=((x>>12)<<12);
         return op(OP_LUI,rd,imm,0);
     }
+    return op();
 }
