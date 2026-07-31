@@ -291,9 +291,9 @@ unsigned int fetch(int id){
 
 int main(){
     read_op();
-    for (int i=0;i<maxn;i++){//for debugging
+    /*for (int i=0;i<maxn;i++){
         naive::_memory[i]=memory[i];
-    }
+    }*/
     int clk=0;
     while (!halt){
         clk++;reg[x0].val=0;reg[x0].prod=-1;
@@ -325,5 +325,5 @@ int main(){
             pc.val+=offset;
         }
     }
-    return clk;
+    return 0;
 }

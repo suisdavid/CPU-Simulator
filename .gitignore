@@ -4,3 +4,7 @@ testcases/
 *.data
 *.dump
 *.c
+CMakeCache.txt
+CMakeFiles/
+Makefile
+cmake_install.cmake
