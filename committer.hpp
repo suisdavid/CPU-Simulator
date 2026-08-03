@@ -11,7 +11,7 @@ extern bool halt;
 const int maxk=10;
 class Committer{
     private:
-        ROB robs[maxk],cur_rb,buffer;
+        ROB robs[maxk],buffer;
         int l,r,time;
         int debug_cnt;
         bool has_buffer;
@@ -108,50 +108,51 @@ class Committer{
 
         pair<int,int> Commit()
         {
+            pair<int,int>ans=make_pair(0,0);
             if (!time){
                 if (l!=r&&robs[l].ready){
-                    cur_rb=robs[l];
-                    l=(l+1)%maxk;
-                    time=(cur_rb.type>0?3:1);
+                    time=(robs[l].type>0?3:1);
                 }
             }
             if (time){
                 time--;
                 if (time==0){
                    // std::cout<<"commit: "<<cur_rb.id<<endl;
-                    if (cur_rb.type>0){//store memory
-                        unsigned int value=cur_rb.value;
-                        for (int i=0;i<cur_rb.type;i++)
+                    if (robs[l].type>0){//store memory
+                        unsigned int value=robs[l].value;
+                        for (int i=0;i<robs[l].type;i++)
                         {
-                            memory[cur_rb.dest+i]=(value&255);
+                            memory[robs[l].dest+i]=(value&255);
                             value>>=8;
                         }
                        // cout<<"memory["<<cur_rb.dest<<"] changed to "<<cur_rb.value<<"(length "<<cur_rb.type<<")"<<endl;
-                        debug_compare();
-                        return make_pair(cur_rb.id,0);
+                       // debug_compare();
+                        ans=make_pair(robs[l].id,0);
                     }
-                    else if (cur_rb.type==0){//alu
-                        if (cur_rb.dest==(unsigned int)-1){
+                    else if (robs[l].type==0){//alu
+                        if (robs[l].dest==(unsigned int)-1){//halt
                             std::cout<<(reg[a0].val&255)<<std::endl;halt=true;
-                            return make_pair(0,0);
                         }
-                        reg[cur_rb.dest].val=cur_rb.value;
-                       //  cout<<"reg["<<cur_rb.dest<<"] changed to "<<cur_rb.value<<endl;
-                        if (reg[cur_rb.dest].prod==cur_rb.id){
-                            reg[cur_rb.dest].prod=-1;
+                        else{
+                            reg[robs[l].dest].val=robs[l].value;
+                        //  cout<<"reg["<<cur_rb.dest<<"] changed to "<<cur_rb.value<<endl;
+                            if (reg[robs[l].dest].prod==robs[l].id){
+                                reg[robs[l].dest].prod=-1;
+                            }
                         }
                     }
                     else{//branch
-                        if (cur_rb.value){//needs to revert
+                        if (robs[l].value){//needs to revert
                        //     cout<<"REVERT TO "<<cur_rb.dest<<endl;
-                            debug_compare();
-                            return make_pair(-cur_rb.id,cur_rb.dest);//need to clear all RS > id
+                         //   debug_compare();
+                            ans=make_pair(-robs[l].id,robs[l].dest);//need to clear all RS > id
                         }
                     }
-                  debug_compare();
+                    l=(l+1)%maxk;
+                 // debug_compare();
                 }
             }
-            return make_pair(0,0);
+            return ans;
         }
         void receive(CDB cdb){
             if (has_buffer&&buffer.id==cdb.id){

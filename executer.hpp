@@ -80,14 +80,6 @@ class Executer{
             buffer=rs;has_buffer=1;
         }
         void receive(CDB cdb){
-            if (has_buffer){
-                if (buffer.q1==cdb.id){
-                    buffer.q1=-1;buffer.v1=cdb.val;
-                }
-                if (buffer.q2==cdb.id){
-                    buffer.q2=-1;buffer.v2=cdb.val;
-                }
-            }
             for (int i=l;i!=r;i=(i+1)%maxm){
                 if (rss[i].q1==cdb.id){
                     rss[i].q1=-1;rss[i].v1=cdb.val;

@@ -19,6 +19,7 @@ Issuer issuer;
 ALU alu;
 LSU lsu;
 BRU bru;
+CDB alu_cdb,lsu_cdb,bru_cdb,pre_alu_cdb,pre_lsu_cdb,pre_bru_cdb;
 Committer committer;
 bool halt;
 int flush_val,newaddr;//for flushing
@@ -65,9 +66,9 @@ unsigned int fetch(int id){
 
 int main(){
     read_op();
-    for (int i=0;i<maxn;i++){
+    /*for (int i=0;i<maxn;i++){
         naive::_memory[i]=memory[i];
-    }
+    }*/
     int clk=0;
     while (!halt){
         clk++;reg[x0].val=0;reg[x0].prod=-1;//period initialize
@@ -87,7 +88,6 @@ int main(){
             flush_val=0;
             continue;
         }
-
         //fetch
         pair<int,unsigned int>fetcher_output=std::make_pair(pc.val,fetch(pc.val));
         //decode
@@ -117,7 +117,10 @@ int main(){
             pc.val=issuer.nex_want;
         }
         broadcast(alu_cdb);broadcast(lsu_cdb);broadcast(bru_cdb);
-        alu.update();lsu.update();bru.update();committer.update();
+        broadcast(pre_alu_cdb);broadcast(pre_lsu_cdb);broadcast(pre_bru_cdb);
+        pre_alu_cdb=alu_cdb;pre_lsu_cdb=lsu_cdb;pre_bru_cdb=bru_cdb;
+        alu.update();lsu.update();bru.update();
+        committer.update();
     }
     return 0;
 }
