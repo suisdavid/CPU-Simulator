@@ -6,7 +6,8 @@
 #include "committer.hpp"
 extern unsigned char memory[];
 extern Register reg[],pc;
-const int maxm=1024;
+extern Committer committer;
+const int maxm=10;
 int signed12(unsigned int x){
     if (x<2048){return (int)x;}
     return (int)x-4096;
@@ -22,8 +23,19 @@ int signed21(unsigned int x){
     return (int)x-2097152;
 }
 
-bool is_load(OP_TYPE type){
-    return type==OP_LB||type==OP_LBU||type==OP_LH||type==OP_LHU||type==OP_LW;
+int is_load(OP_TYPE type){
+    switch(type){
+        case OP_LB:
+        case OP_LBU:
+            return 1;
+        case OP_LH:
+        case OP_LHU:
+            return 2;
+        case OP_LW:
+            return 4;
+        default:
+            return 0;     
+    }
 }
 
 bool is_store(OP_TYPE type){
@@ -38,26 +50,25 @@ class Executer{
         Executer(){
             l=0;r=0;time=0;has_buffer=0;
         }
-        bool run(){
+        int run(){
             if (!time){
                 for (int id=l;id!=r;id=(id+1)%maxm){//find the first ready instruction
                     if (rss[id].q1==-1&&rss[id].q2==-1){
                         cur_rs=rss[id];
-                        time=(is_load(cur_rs.type)?3:1);
+                        time=1;
                         for (int i=id;i!=l;i=(i+maxm-1)%maxm){
                             rss[i]=rss[(i+maxm-1)%maxm];
                         }
                         l=(l+1)%maxm;
-                        break;
+                        return 1;
                     }
                     if (is_store(rss[id].type)){//store op not completed
                         return 0;
                     }
                 }
             }
-            if (time){
-                time--;
-                return time==0;
+            else if (--time==0){
+                return 2;
             }
             return 0;
         }
@@ -175,6 +186,7 @@ class ALU: public Executer{
                         val=r1;
                         break;
                 }
+                time--;
                 return CDB(cur_rs.id,val,dest);
            }
            return CDB();
@@ -182,43 +194,53 @@ class ALU: public Executer{
 };
 
 class LSU: public Executer{
+    private:
+        CDB cur_cdb;
     public:
-        int lst_store;
-        LSU(){
-            lst_store=-1;
-        }
         CDB execute(){
-            if (lst_store==-1&&run())
+            int res=run();
+            if (res==1)
             {
-                if (is_store(cur_rs.type)){
-                    lst_store=cur_rs.id;
-                }
                 unsigned int val=0,r1=cur_rs.v1;int r2=cur_rs.v2,dest=cur_rs.dest;
-                switch (cur_rs.type)
-                {
-                    case OP_LB:
-                        val=(signed char)memory[r1+signed12(r2)];
-                        break;
-                    case OP_LBU:
-                        val=memory[r1+signed12(r2)];
-                        break;
-                    case OP_LH:
-                        val=(signed short)((unsigned short)memory[r1+signed12(r2)]|((unsigned short)memory[r1+signed12(r2)+1]<<8));
-                        break;
-                    case OP_LHU:
-                        val=((unsigned short)memory[r1+signed12(r2)]|((unsigned short)memory[r1+signed12(r2)+1]<<8));
-                        break;
-                    case OP_LW:
-                        val=(((unsigned int)memory[r1+signed12(r2)])|((unsigned int)memory[r1+signed12(r2)+1]<<8)|((unsigned int)memory[r1+signed12(r2)+2]<<16)|((unsigned int)memory[r1+signed12(r2)+3]<<24));
-                        break;
-                    case OP_SB:
-                    case OP_SH:
-                    case OP_SW:
-                        val=r2;
-                        dest=r1+signed12(dest);
-                        break;
+                int len=is_load(cur_rs.type); 
+                if (len){//store to load forwarding
+                    unsigned long long stlf=committer.find(cur_rs.id,r1+signed12(r2),r1+signed12(r2)+len);
+                    unsigned char vals[4]={(unsigned char)(stlf&255),(unsigned char)((stlf>>16)&255),(unsigned char)((stlf>>32)&255),(unsigned char)((stlf>>48)&255)};
+                    for (int i=0;i<len;i++){
+                        if (((stlf>>(16*i))&65535)==65535){//not found,has to read memory
+                            time=3;
+                            vals[i]=memory[r1+signed12(r2)+i];
+                        }
+                    }
+                    switch (cur_rs.type){
+                        case OP_LB:
+                            val=(signed char)vals[0];
+                            break;
+                        case OP_LBU:
+                            val=vals[0];
+                            break;
+                        case OP_LH:
+                            val=(signed short)((unsigned short)vals[0]|((unsigned short)vals[1]<<8));
+                            break;
+                        case OP_LHU:
+                            val=((unsigned short)vals[0]|((unsigned short)vals[1]<<8));
+                            break;
+                        case OP_LW:
+                            val=(((unsigned int)vals[0])|((unsigned int)vals[1]<<8)|((unsigned int)vals[2]<<16)|((unsigned int)vals[3]<<24));
+                            break;
+                    }
                 }
-                return CDB(cur_rs.id,val,dest);
+                else{
+                    val=r2;
+                    dest=r1+signed12(dest);
+                }
+                cur_cdb=CDB(cur_rs.id,val,dest);
+                if (--time==0){
+                    return cur_cdb;
+                }
+            }
+            else if (res==2){
+                return cur_cdb;
             }
             return CDB();
         }   
@@ -255,6 +277,7 @@ class BRU: public Executer{
                         val=(r1!=r2)^dest;
                         break;
                 }
+                time--;
                 return CDB(cur_rs.id,val,-2);
             }
            return CDB();

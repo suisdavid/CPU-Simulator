@@ -13,7 +13,7 @@ using namespace std;
 
 const int maxn=0x40000;
 unsigned char memory[maxn];
-Register reg[32],pc;
+Register reg[32],pc;//record the last unknown store
 Decoder decoder;
 Issuer issuer;
 ALU alu;
@@ -65,18 +65,15 @@ unsigned int fetch(int id){
 
 int main(){
     read_op();
-   /* for (int i=0;i<maxn;i++){
+    for (int i=0;i<maxn;i++){
         naive::_memory[i]=memory[i];
-    }*/
+    }
     int clk=0;
     while (!halt){
         clk++;reg[x0].val=0;reg[x0].prod=-1;//period initialize
         if (flush_val){//flushing
             issuer.nex_want=pc.val=newaddr;
             alu.clear(flush_val);//clear all RS whose id>-res
-            if (lsu.lst_store>flush_val){
-                lsu.lst_store=-1;
-            }
             lsu.clear(flush_val);
             bru.clear(flush_val);
             for (int i=0;i<32;i++){
@@ -97,17 +94,14 @@ int main(){
         pair<int,op>decode_output=decoder.decode();
         //issue
         int offset=issuer.issue(clk);
-        //write back
-        broadcast(alu.execute());
-        broadcast(lsu.execute());
-        broadcast(bru.execute());
+        //execute
+        CDB alu_cdb=alu.execute();
+        CDB lsu_cdb=lsu.execute();
+        CDB bru_cdb=bru.execute();
         //commit
         pair<int,int>committer_output=committer.Commit();
         int res=committer_output.first;
-        if (res>0&&lsu.lst_store==res){
-            lsu.lst_store=-1;//store completed
-        }
-        else if (res<0){//revert
+        if (res<0){//revert
             flush_val=-res;
             newaddr=committer_output.second;
         }
@@ -122,6 +116,7 @@ int main(){
             issuer.id=-1;//rejected legacy decoder output
             pc.val=issuer.nex_want;
         }
+        broadcast(alu_cdb);broadcast(lsu_cdb);broadcast(bru_cdb);
         alu.update();lsu.update();bru.update();committer.update();
     }
     return 0;

@@ -8,7 +8,7 @@
 extern Register reg[],pc;
 extern unsigned char memory[];
 extern bool halt;
-const int maxk=1024;
+const int maxk=10;
 class Committer{
     private:
         ROB robs[maxk],cur_rb,buffer;
@@ -88,6 +88,24 @@ class Committer{
             }
             return ans;
         }
+
+        unsigned long long find(int id,int L,int R){
+            unsigned long long val[4]={0xFFFF,0xFFFF,0xFFFF,0xFFFF};
+            for (int i=l;i!=r;i=(i+1)%maxk)
+            {
+                if (robs[i].id>=id){break;}
+                if (robs[i].type>0&&robs[i].ready&&robs[i].dest<R&&robs[i].dest+robs[i].type>L){//ready store operations that overlap
+                    for (int j=0;j<robs[i].type;j++){
+                        int offset=robs[i].dest+j-L;
+                        if (offset>=0&&offset<R-L){
+                               val[offset]=((robs[i].value>>(8*j))&255);
+                        }
+                    }
+                }
+            }
+            return val[0]|(val[1]<<16)|(val[2]<<32)|(val[3]<<48);
+        }
+
         pair<int,int> Commit()
         {
             if (!time){
@@ -108,8 +126,8 @@ class Committer{
                             memory[cur_rb.dest+i]=(value&255);
                             value>>=8;
                         }
-                     //   cout<<"memory["<<cur_rb.dest<<"] changed to "<<cur_rb.value<<"(length "<<cur_rb.type<<")"<<endl;
-                       // debug_compare();
+                       // cout<<"memory["<<cur_rb.dest<<"] changed to "<<cur_rb.value<<"(length "<<cur_rb.type<<")"<<endl;
+                        debug_compare();
                         return make_pair(cur_rb.id,0);
                     }
                     else if (cur_rb.type==0){//alu
@@ -118,7 +136,7 @@ class Committer{
                             return make_pair(0,0);
                         }
                         reg[cur_rb.dest].val=cur_rb.value;
-                     //    cout<<"reg["<<cur_rb.dest<<"] changed to "<<cur_rb.value<<endl;
+                       //  cout<<"reg["<<cur_rb.dest<<"] changed to "<<cur_rb.value<<endl;
                         if (reg[cur_rb.dest].prod==cur_rb.id){
                             reg[cur_rb.dest].prod=-1;
                         }
@@ -126,11 +144,11 @@ class Committer{
                     else{//branch
                         if (cur_rb.value){//needs to revert
                        //     cout<<"REVERT TO "<<cur_rb.dest<<endl;
-                          //  debug_compare();
+                            debug_compare();
                             return make_pair(-cur_rb.id,cur_rb.dest);//need to clear all RS > id
                         }
                     }
-                  //debug_compare();
+                  debug_compare();
                 }
             }
             return make_pair(0,0);
