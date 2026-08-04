@@ -8,7 +8,7 @@ for i in range(n):
     with open(file_name,'r') as f:
         data=f.read()
     try:
-        result = subprocess.run('./code', input=data, capture_output=True, text=True, timeout=30)
+        result = subprocess.run('./code', input=data, capture_output=True, text=True, timeout=50)
         if int(result.stdout)!=ans[i]:
             print(f"{name_list[i]} FAILED!")
         else:

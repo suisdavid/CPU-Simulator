@@ -20,7 +20,7 @@ class Issuer{
     }
     int issue(int clk)
     {
-        if (id==-1){return 4;}
+        if (id==-1||id!=nex_want){return nex_want;}
       //  cout<<"Issue: "<<id<<" "<<clk<<endl;
         OP_TYPE type=cur_op.type;int rd=cur_op.rd,r1=cur_op.r1,r2=cur_op.r2;
         RS rs;rs.type=type;rs.id=clk;//label
@@ -37,7 +37,7 @@ class Issuer{
             case OP_SLT:
             case OP_SLTU:
                 //alu(no immediate)
-                if (alu.full()||committer.full()){return 0;}
+                if (alu.full()||committer.full()){return nex_want;}
                 if (reg[r1].prod==-1){
                     rs.v1=reg[r1].val;
                 }
@@ -67,7 +67,7 @@ class Issuer{
                 alu.add(rs);
                 committer.add(ROB(clk,rd));
                 nex_want+=4;
-                return 4;
+                return nex_want;
             case OP_ADDI:
             case OP_ANDI:
             case OP_ORI:
@@ -78,7 +78,7 @@ class Issuer{
             case OP_SLTI:
             case OP_SLTIU:
                 //alu(with immediate)
-                if (alu.full()||committer.full()){return 0;}
+                if (alu.full()||committer.full()){return nex_want;}
                 if (reg[r1].prod==-1){
                     rs.v1=reg[r1].val;
                 }
@@ -100,14 +100,14 @@ class Issuer{
                 alu.add(rs);
                 committer.add(ROB(clk,rd));
                 nex_want+=4;
-                return 4;
+                return nex_want;
             case OP_LB:
             case OP_LBU:
             case OP_LH:
             case OP_LHU:
             case OP_LW:
                 //load
-                if (lsu.full()||committer.full()){return 0;}
+                if (lsu.full()||committer.full()){return nex_want;}
                 if (reg[r1].prod==-1){
                     rs.v1=reg[r1].val;
                 }
@@ -126,12 +126,12 @@ class Issuer{
                 lsu.add(rs);
                 committer.add(ROB(clk,rd));
                 nex_want+=4;
-                return 4;
+                return nex_want;
             case OP_SB:
             case OP_SH:
             case OP_SW:
                 //store
-                if (lsu.full()||committer.full()){return 0;}
+                if (lsu.full()||committer.full()){return nex_want;}
                 if (reg[r1].prod==-1){
                     rs.v1=reg[r1].val;
                 }
@@ -160,7 +160,7 @@ class Issuer{
                 lsu.add(rs);
                 committer.add(ROB(clk,0,type==OP_SB?1:(type==OP_SH?2:4)));//change memory;
                 nex_want+=4;
-                return 4;
+                return nex_want;
             case OP_BEQ:
             case OP_BGE:
             case OP_BGEU:
@@ -168,7 +168,7 @@ class Issuer{
             case OP_BLTU:
             case OP_BNE:
                 //branch
-                if (bru.full()||committer.full()){return 0;}
+                if (bru.full()||committer.full()){return nex_want;}
                 if (reg[r1].prod==-1){
                     rs.v1=reg[r1].val;
                 }
@@ -197,18 +197,18 @@ class Issuer{
                 bru.add(rs);
                 committer.add(ROB(clk,id+signed13(rd),-1));//dest is the unchosen pc value;
                 nex_want+=4;
-                return 4;
+                return nex_want;
             case OP_JAL:
-                if (alu.full()||committer.full()){return 0;}
+                if (alu.full()||committer.full()){return nex_want;}
                 rs.v1=id+4;
                 rs.dest=rd;
                 reg[rd].prod=clk;
                 alu.add(rs);
                 committer.add(ROB(clk,rd));
                 nex_want+=signed21(r1);
-                return signed21(r1);
+                return nex_want;
             case OP_JALR:
-                if (alu.full()||committer.full()){return 0;}
+                if (alu.full()||committer.full()){return nex_want;}
                 if (rd==r1){
                     rs.v1=id+4;
                     rs.dest=rd;
@@ -216,7 +216,7 @@ class Issuer{
                     alu.add(rs);
                     committer.add(ROB(clk,rd));
                     nex_want+=4+signed12(r2);
-                    return 4+signed12(r2);
+                    return nex_want;
                 }
                 if (reg[r1].prod==-1){
                     val=reg[r1].val;
@@ -227,7 +227,7 @@ class Issuer{
                         val=temp.first;
                     }
                     else{
-                        return 0;
+                        return nex_want;
                     }
                 }
                 rs.v1=id+4;
@@ -236,27 +236,27 @@ class Issuer{
                 alu.add(rs);
                 committer.add(ROB(clk,rd));
                 nex_want+=val+signed12(r2)-id;
-                return val+signed12(r2)-id;
+                return nex_want;
             case OP_AUIPC:
-                if (alu.full()||committer.full()){return 0;}
+                if (alu.full()||committer.full()){return nex_want;}
                 rs.v1=id+r1;
                 rs.dest=rd;
                 reg[rd].prod=clk;
                 alu.add(rs);
                 committer.add(ROB(clk,rd));
                 nex_want+=4;
-                return 4;
+                return nex_want;
             case OP_LUI:
-                if (alu.full()||committer.full()){return 0;}
+                if (alu.full()||committer.full()){return nex_want;}
                 rs.v1=r1;
                 rs.dest=rd;
                 reg[rd].prod=clk;
                 alu.add(rs);
                 committer.add(ROB(clk,rd));
                 nex_want+=4;
-                return 4;
+                return nex_want;
             default:
-                return 0;
+                return nex_want;
         }
     }
 };

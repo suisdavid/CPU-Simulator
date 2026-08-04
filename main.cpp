@@ -93,7 +93,7 @@ int main(){
         //decode
         pair<int,op>decode_output=decoder.decode();
         //issue
-        int offset=issuer.issue(clk);
+        int new_pc_val=issuer.issue(clk);
         //execute
         CDB alu_cdb=alu.execute();
         CDB lsu_cdb=lsu.execute();
@@ -107,15 +107,8 @@ int main(){
         }
         //update
         decoder.id=fetcher_output.first;decoder.opcode=fetcher_output.second;
-        if (decode_output.first==issuer.nex_want)
-        {  
-            issuer.id=decode_output.first;issuer.cur_op=decode_output.second;
-            pc.val+=offset;
-        }
-        else{
-            issuer.id=-1;//rejected legacy decoder output
-            pc.val=issuer.nex_want;
-        }
+        issuer.id=decode_output.first;issuer.cur_op=decode_output.second;
+        pc.val=new_pc_val;
         broadcast(alu_cdb);broadcast(lsu_cdb);broadcast(bru_cdb);
         broadcast(pre_alu_cdb);broadcast(pre_lsu_cdb);broadcast(pre_bru_cdb);
         pre_alu_cdb=alu_cdb;pre_lsu_cdb=lsu_cdb;pre_bru_cdb=bru_cdb;
