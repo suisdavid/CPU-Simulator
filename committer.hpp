@@ -163,7 +163,7 @@ class Committer{
         }
         void receive(CDB cdb){
             for (int id=l;id!=r;id=(id+1)%maxk){
-                if (robs[id].id==cdb.id){
+                if (robs[id].id==cdb.id&&robs[id].ready==false){
                     if (cdb.dest!=-2)// -2 is for branch operations, -1 is for halt
                     {
                         robs[id].dest=cdb.dest;
