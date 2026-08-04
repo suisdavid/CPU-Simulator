@@ -1,13 +1,13 @@
 #pragma once
+#include "memory.hpp"
 #include "reg.hpp"
 #include "op.hpp"
 #include "ROB.hpp"
 #include "CDB.hpp"
-#include "main_naive.hpp"
 #include "Predictor.hpp"
 #include <iostream>
+extern Memory memory;
 extern Register reg[],pc;
-extern unsigned char memory[];
 extern bool halt;
 extern Predictor predictor;
 const int maxk=10;
@@ -17,45 +17,6 @@ class Committer{
         int l,r,time;
         int debug_cnt;
         bool has_buffer;
-        void debug_compare(){//for debugging
-            debug_cnt++;
-            if (naive::do_naive()){
-                cout<<"NAIVE ENDED!!!"<<endl;
-            }
-            int flg=0;
-            for (int i=0;i<32;i++){
-                if (reg[i].val!=naive::_reg[i].val){
-                    flg=1;
-                    break;
-                }
-            }
-            if (flg){
-                cout<<"NO!!!"<<debug_cnt<<" pc is "<<naive::_pc.val<<endl;
-                cout<<"My register values:"<<endl;
-                for (int i=0;i<32;i++){
-                    cout<<reg[i].val<<" ";
-                }
-                cout<<endl<<"Standard register values:"<<endl;
-                for (int i=0;i<32;i++){
-                    cout<<naive::_reg[i].val<<" ";
-                }
-                cout<<endl;
-            }
-            else{
-                for (int i=0;i<naive::_maxm;i++){
-                    if (memory[i]!=naive::_memory[i]){
-                        flg=1;break;
-                    }
-                }
-                if (!flg){return;}
-                cout<<"NO!!!"<<debug_cnt<<" pc is "<<naive::_pc.val<<endl;
-                for (int i=0;i<naive::_maxm;i++){
-                    if (memory[i]!=naive::_memory[i]){
-                        cout<<"memory differ in "<<i<<", my is "<<(unsigned int)memory[i]<<" ,should be "<<(unsigned int)naive::_memory[i]<<endl;
-                    }
-                }
-            }
-        }
     public:
         int total,right;//for branch predicting
         Committer(){
@@ -115,23 +76,18 @@ class Committer{
             pair<int,int>ans=make_pair(0,0);
             if (!time){
                 if (l!=r&&robs[l].ready){
-                    time=(robs[l].type>0?3:1);
-                }
-            }
-            if (time){
-                time--;
-                if (time==0){
-                   // std::cout<<"commit: "<<cur_rb.id<<endl;
+                    time=1;
                     if (robs[l].type>0){//store memory
+                        time=2;
                         unsigned int value=robs[l].value;
-                        for (int i=0;i<robs[l].type;i++)
-                        {
-                            memory[robs[l].dest+i]=(value&255);
+                        for (int i=0;i<robs[l].type;i++){
+                            if (!memory.store(value&255,robs[l].dest+i)){//cache not hit
+                                time=3;
+                            }
                             value>>=8;
                         }
                        // cout<<"memory["<<cur_rb.dest<<"] changed to "<<cur_rb.value<<"(length "<<cur_rb.type<<")"<<endl;
-                       // debug_compare();
-                        ans=make_pair(robs[l].id,0);
+                        //ans=make_pair(robs[l].id,0);
                     }
                     else if (robs[l].type==0){//alu
                         if (robs[l].dest==(unsigned int)-1){//halt
@@ -155,8 +111,12 @@ class Committer{
                         }
                         predictor.add(-robs[l].type-1,robs[l].value);
                     }
+                }
+            }
+            if (time){
+                time--;
+                if (time==0){
                     l=(l+1)%maxk;
-                 // debug_compare();
                 }
             }
             return ans;

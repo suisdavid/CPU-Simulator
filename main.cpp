@@ -1,4 +1,4 @@
-#include <iostream>
+#include "memory.hpp"
 #include "reg.hpp"
 #include "op.hpp"
 #include "RS.hpp"
@@ -9,11 +9,9 @@
 #include "issuer.hpp"
 #include "committer.hpp"
 #include "executer.hpp"
-#include "main_naive.hpp"//for debugging
 using namespace std;
 
-const int maxn=0x40000;
-unsigned char memory[maxn];
+Memory memory;
 Register reg[32],pc;//record the last unknown store
 Decoder decoder;
 Issuer issuer;
@@ -25,34 +23,6 @@ Committer committer;
 Predictor predictor;
 bool halt;
 int flush_val,newaddr;//for flushing
-int hex2int(unsigned char c){
-    if (c>='0'&&c<='9'){
-        return c-'0';
-    }
-    if (c>='a'&&c<='f'){
-        return c-'a'+10;
-    }
-    return c-'A'+10;
-}
-void read_op(){
-    int id=0;unsigned char c=getchar();
-    while (c!=255){
-        if (c=='@'){
-            id=0;
-            for (int i=0;i<8;i++){
-                c=getchar();
-                id=id*16+hex2int(c);
-            }
-        }
-        else if ((c>='0'&&c<='9')||(c>='A'&&c<='F')){
-            int val=hex2int(c);
-            c=getchar();
-            val=val*16+hex2int(c);
-            memory[id++]=val;
-        }
-        c=getchar();
-    }
-}
 
 void broadcast(CDB cdb){
     if (cdb.id==-1){return;}
@@ -62,15 +32,9 @@ void broadcast(CDB cdb){
     committer.receive(cdb);
 }
 
-unsigned int fetch(int id){
-    return ((unsigned int)memory[id])|((unsigned int)memory[id+1]<<8)|((unsigned int)memory[id+2]<<16)|((unsigned int)memory[id+3]<<24);
-}
 
 int main(){
-    read_op();
-    /*for (int i=0;i<maxn;i++){
-        naive::_memory[i]=memory[i];
-    }*/
+    memory.init();
     int clk=0;
     while (!halt){
         clk++;reg[x0].val=0;reg[x0].prod=-1;//period initialize
@@ -91,7 +55,7 @@ int main(){
             continue;
         }
         //fetch
-        pair<int,unsigned int>fetcher_output=std::make_pair(pc.val,fetch(pc.val));
+        pair<int,unsigned int>fetcher_output=make_pair(pc.val,memory.fetch(pc.val));
         //decode
         pair<int,op>decode_output=decoder.decode();
         //issue
@@ -118,7 +82,7 @@ int main(){
         committer.update();
         predictor.update();
     }
- //   cout<<"clock="<<clk<<endl;
+   // cout<<"clock="<<clk<<endl;
    // cout<<"branch predictor accuracy="<<(double)committer.right/committer.total<<endl;
     return 0;
 }

@@ -1,7 +1,6 @@
 #pragma once
 #include "reg.hpp"
 #include "op.hpp"
-extern unsigned char memory[];
 class Decoder{
     public:
     int id;

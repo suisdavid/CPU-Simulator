@@ -4,7 +4,7 @@
 #include "RS.hpp"
 #include "CDB.hpp"
 #include "committer.hpp"
-extern unsigned char memory[];
+extern Memory memory;
 extern Register reg[],pc;
 extern Committer committer;
 const int maxm=10;
@@ -200,8 +200,14 @@ class LSU: public Executer{
                     unsigned char vals[4]={(unsigned char)(stlf&255),(unsigned char)((stlf>>16)&255),(unsigned char)((stlf>>32)&255),(unsigned char)((stlf>>48)&255)};
                     for (int i=0;i<len;i++){
                         if (((stlf>>(16*i))&65535)==65535){//not found,has to read memory
-                            time=3;
-                            vals[i]=memory[r1+signed12(r2)+i];
+                            pair<bool,unsigned char>temp=memory.load(r1+signed12(r2)+i);
+                            vals[i]=temp.second;
+                            if (!temp.first){
+                                time=3;//cache not hit
+                            }
+                            else if (time==1){
+                                time=2;//cache hit case
+                            }
                         }
                     }
                     switch (cur_rs.type){
