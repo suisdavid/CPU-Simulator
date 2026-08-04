@@ -4,6 +4,7 @@
 #include "RS.hpp"
 #include "ROB.hpp"
 #include "CDB.hpp"
+#include "Predictor.hpp"
 #include "decoder.hpp"
 #include "issuer.hpp"
 #include "committer.hpp"
@@ -21,6 +22,7 @@ LSU lsu;
 BRU bru;
 CDB alu_cdb,lsu_cdb,bru_cdb,pre_alu_cdb,pre_lsu_cdb,pre_bru_cdb;
 Committer committer;
+Predictor predictor;
 bool halt;
 int flush_val,newaddr;//for flushing
 int hex2int(unsigned char c){
@@ -114,8 +116,9 @@ int main(){
         pre_alu_cdb=alu_cdb;pre_lsu_cdb=lsu_cdb;pre_bru_cdb=bru_cdb;
         alu.update();lsu.update();bru.update();
         committer.update();
+        predictor.update();
     }
    // cout<<"clock="<<clk<<endl;
-   // cout<<"branch predictor accuracy="<<(double)committer.right/committer.total<<endl;
+    //cout<<"branch predictor accuracy="<<(double)committer.right/committer.total<<endl;
     return 0;
 }

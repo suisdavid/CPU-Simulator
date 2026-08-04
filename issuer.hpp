@@ -4,14 +4,14 @@
 #include "RS.hpp"
 #include "executer.hpp"
 #include "committer.hpp"
-#include "BHT.hpp"
+#include "Predictor.hpp"
 extern ALU alu;
 extern LSU lsu;
 extern BRU bru;
 extern Committer committer;
 extern unsigned char memory[];
 extern Register reg[];
-extern BHT bht;
+extern Predictor predictor;
 class Issuer{
     public:
     int id,nex_want;
@@ -194,9 +194,10 @@ class Issuer{
                         rs.q2=reg[r2].prod;
                     }
                 }
-                rs.dest=bht.query(id);//dest means whether choose to jump
+                val=predictor.query(id);//lsb means whether decides to jump
+                rs.dest=(val&1);
                 bru.add(rs);
-                committer.add(ROB(clk,rs.dest?id+4:id+signed13(rd),-id-1,rs.dest));//dest is the unchosen pc value;
+                committer.add(ROB(clk,rs.dest?id+4:id+signed13(rd),-id-1,val));//dest is the unchosen pc value;
                 nex_want+=(rs.dest?signed13(rd):4);
                 return nex_want;
             case OP_JAL:

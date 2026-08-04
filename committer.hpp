@@ -4,12 +4,12 @@
 #include "ROB.hpp"
 #include "CDB.hpp"
 #include "main_naive.hpp"
-#include "BHT.hpp"
+#include "Predictor.hpp"
 #include <iostream>
 extern Register reg[],pc;
 extern unsigned char memory[];
 extern bool halt;
-extern BHT bht;
+extern Predictor predictor;
 const int maxk=10;
 class Committer{
     private:
@@ -148,15 +148,12 @@ class Committer{
                     else{//branch
                         total++;
                         if (robs[l].value&1){//needs to revert
-                       //     cout<<"REVERT TO "<<cur_rb.dest<<endl;
-                         //   debug_compare();
                             ans=make_pair(-robs[l].id,robs[l].dest);//need to clear all RS > id
-                            bht.add(-robs[l].type-1,((robs[l].value&2)>>1)^1);
                         }
                         else{
                             right++;
-                            bht.add(-robs[l].type-1,(robs[l].value&2)>>1);
                         }
+                        predictor.add(-robs[l].type-1,robs[l].value);
                     }
                     l=(l+1)%maxk;
                  // debug_compare();
@@ -174,7 +171,7 @@ class Committer{
                     }
                     else
                     {
-                        robs[id].value=robs[id].value*2+cdb.val;//the LSB means whether need to revert, the second LSB means whether taken
+                        robs[id].value=robs[id].value*2+cdb.val;
                     }
                     robs[id].ready=true;
                 }
