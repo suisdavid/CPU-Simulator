@@ -4,13 +4,14 @@
 #include "RS.hpp"
 #include "executer.hpp"
 #include "committer.hpp"
+#include "BHT.hpp"
 extern ALU alu;
 extern LSU lsu;
 extern BRU bru;
 extern Committer committer;
 extern unsigned char memory[];
 extern Register reg[];
-
+extern BHT bht;
 class Issuer{
     public:
     int id,nex_want;
@@ -193,10 +194,10 @@ class Issuer{
                         rs.q2=reg[r2].prod;
                     }
                 }
-                rs.dest=0;//dest means whether choose to jump
+                rs.dest=bht.query(id);//dest means whether choose to jump
                 bru.add(rs);
-                committer.add(ROB(clk,id+signed13(rd),-1));//dest is the unchosen pc value;
-                nex_want+=4;
+                committer.add(ROB(clk,rs.dest?id+4:id+signed13(rd),-id-1,rs.dest));//dest is the unchosen pc value;
+                nex_want+=(rs.dest?signed13(rd):4);
                 return nex_want;
             case OP_JAL:
                 if (alu.full()||committer.full()){return nex_want;}

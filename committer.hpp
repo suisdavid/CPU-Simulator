@@ -4,10 +4,12 @@
 #include "ROB.hpp"
 #include "CDB.hpp"
 #include "main_naive.hpp"
+#include "BHT.hpp"
 #include <iostream>
 extern Register reg[],pc;
 extern unsigned char memory[];
 extern bool halt;
+extern BHT bht;
 const int maxk=10;
 class Committer{
     private:
@@ -55,10 +57,12 @@ class Committer{
             }
         }
     public:
+        int total,right;//for branch predicting
         Committer(){
             l=0;r=0;time=0;
             debug_cnt=0;
             has_buffer=0;
+            total=right=0;
         }
         bool full(){
             return (r+1)%maxk==l;
@@ -142,10 +146,16 @@ class Committer{
                         }
                     }
                     else{//branch
-                        if (robs[l].value){//needs to revert
+                        total++;
+                        if (robs[l].value&1){//needs to revert
                        //     cout<<"REVERT TO "<<cur_rb.dest<<endl;
                          //   debug_compare();
                             ans=make_pair(-robs[l].id,robs[l].dest);//need to clear all RS > id
+                            bht.add(-robs[l].type-1,((robs[l].value&2)>>1)^1);
+                        }
+                        else{
+                            right++;
+                            bht.add(-robs[l].type-1,(robs[l].value&2)>>1);
                         }
                     }
                     l=(l+1)%maxk;
@@ -155,21 +165,17 @@ class Committer{
             return ans;
         }
         void receive(CDB cdb){
-            if (has_buffer&&buffer.id==cdb.id){
-                if (cdb.dest!=-2)// -2 is for branch operations, -1 is for halt
-                {
-                    buffer.dest=cdb.dest;
-                }
-                buffer.value=cdb.val;
-                buffer.ready=true;
-            }
             for (int id=l;id!=r;id=(id+1)%maxk){
                 if (robs[id].id==cdb.id){
                     if (cdb.dest!=-2)// -2 is for branch operations, -1 is for halt
                     {
                         robs[id].dest=cdb.dest;
+                        robs[id].value=cdb.val;
                     }
-                    robs[id].value=cdb.val;
+                    else
+                    {
+                        robs[id].value=robs[id].value*2+cdb.val;//the LSB means whether need to revert, the second LSB means whether taken
+                    }
                     robs[id].ready=true;
                 }
             }

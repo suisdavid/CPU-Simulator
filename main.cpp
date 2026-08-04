@@ -115,5 +115,7 @@ int main(){
         alu.update();lsu.update();bru.update();
         committer.update();
     }
+    cout<<"clock="<<clk<<endl;
+    cout<<"branch predictor accuracy="<<(double)committer.right/committer.total<<endl;
     return 0;
 }
