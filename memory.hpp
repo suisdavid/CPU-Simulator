@@ -3,7 +3,7 @@
 const int maxn=0x40000;
 const int block_num=(1<<8);
 const int block_size=maxn/(4*block_num);
-const int cache_size=(1<<4);
+const int cache_size=(1<<5);
 using namespace std;
 
 typedef pair<int,unsigned char> Entry;
@@ -16,13 +16,14 @@ int hex2int(unsigned char c){
     }
     return c-'A'+10;
 }
-class Memory{
+class Memory{//LRU Cache
     private:
         unsigned char RAM[maxn];
         Entry cache[4][block_num][cache_size];//(addr,value(1 byte)) pair
         unsigned char cache_cnt[4][block_num];//four sets of caches, for addr mod 4 =0,1,2,3 respectively,m
         pair<bool,Entry>updateEntries[4];//for updating
     public:
+        int hit,nothit;//for statistics
         Memory(){
             for (int j=0;j<4;j++)
             {
@@ -30,6 +31,7 @@ class Memory{
                     cache_cnt[j][i]=0;
                 }
             }
+            hit=nothit=0;
         }
         void init()
         {
@@ -64,6 +66,7 @@ class Memory{
                     Entry entry=cache[set_id][block_id][i];
                     updateEntries[set_id].first=1;
                     updateEntries[set_id].second=entry;
+                    hit++;
                     return make_pair(1,entry.second);
                 }
             }
@@ -71,6 +74,7 @@ class Memory{
             Entry entry=make_pair(addr,RAM[addr]);
             updateEntries[set_id].first=1;
             updateEntries[set_id].second=entry;
+            nothit++;
             return make_pair(0,entry.second);
         }
         bool store(unsigned char value,int addr){
@@ -82,6 +86,7 @@ class Memory{
                         updateEntries[set_id].first=1;
                         updateEntries[set_id].second=entry;
                     }
+                    hit++;
                     return 1;
                 }
             }
@@ -92,6 +97,7 @@ class Memory{
                 updateEntries[set_id].first=1;
                 updateEntries[set_id].second=make_pair(addr,value);
             }
+            nothit++;
             return 0;
         }  
 

@@ -38,8 +38,17 @@ int is_load(OP_TYPE type){
     }
 }
 
-bool is_store(OP_TYPE type){
-    return type==OP_SB||type==OP_SH||type==OP_SW;
+int is_store(OP_TYPE type){
+    switch(type){
+        case OP_SB:
+            return 1;
+        case OP_SH:
+            return 2;
+        case OP_SW:
+            return 4;
+        default:
+            return 0;     
+    }
 }
 
 class Executer{
@@ -54,6 +63,22 @@ class Executer{
             if (!time){
                 for (int id=l;id!=r;id=(id+1)%maxm){//find the first ready instruction
                     if (rss[id].q1==-1&&rss[id].q2==-1){
+                        int len=is_load(rss[id].type);
+                        if (len){//load operation
+                            int L1=rss[id].v1+signed12(rss[id].v2),R1=L1+len,flag=0;
+                            for (int j=l;j!=id;j=(j+1)%maxm){
+                                int tp=is_store(rss[j].type);
+                                if (!tp){continue;}
+                                int L2=rss[j].v1+signed12(rss[j].dest),R2=L2+tp;
+                                if (L2<R1&&L1<R2){
+                                    flag=1;break;
+                                }
+                            }
+                            if (flag)//overlapped store
+                            {
+                                continue;
+                            }
+                        }
                         cur_rs=rss[id];
                         time=1;
                         for (int i=id;i!=l;i=(i+maxm-1)%maxm){
@@ -62,7 +87,7 @@ class Executer{
                         l=(l+1)%maxm;
                         return 1;
                     }
-                    if (is_store(rss[id].type)){//store op not completed
+                    if (is_store(rss[id].type)&&rss[id].q1!=-1){//store op with unknown address
                         return 0;
                     }
                 }

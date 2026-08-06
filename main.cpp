@@ -84,6 +84,7 @@ int main(){
         memory.update();
     }
    // cout<<"clock="<<clk<<endl;
+   // cout<<"hit= "<<memory.hit<<" not hit= "<<memory.nothit<<" accuracy= "<<(double)memory.hit/(memory.hit+memory.nothit)<<endl;
    // cout<<"branch predictor accuracy="<<(double)committer.right/committer.total<<endl;
     return 0;
 }
