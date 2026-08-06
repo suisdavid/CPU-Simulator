@@ -38,6 +38,12 @@ class Committer{
                 r=(r+1)%maxk;
                 has_buffer=0;
             }
+            if (time){
+                time--;
+                if (time==0){
+                    l=(l+1)%maxk;
+                }
+            }
         }
         pair<unsigned int,bool>read(int prod)
         {
@@ -111,12 +117,6 @@ class Committer{
                         }
                         predictor.add(-robs[l].type-1,robs[l].value);
                     }
-                }
-            }
-            if (time){
-                time--;
-                if (time==0){
-                    l=(l+1)%maxk;
                 }
             }
             return ans;
